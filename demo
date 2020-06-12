@@ -1,0 +1,35 @@
+#!/bin/sh
+
+titlep="Instalarch"
+#
+title="Particionado manual  -  $titlep"
+> .devices1.txt
+lsblk -lno NAME,TYPE,SIZE | grep 'disk' | awk '{print "/dev/" $1 " " $3}' | sort -u > .devices1.txt
+devices1=` awk '{print "FALSE " $0}' .devices1.txt `
+#
+
+
+dev=$(zenity --list --ok-label="Siguiente" --cancel-label="Atrás" --radiolist --height=300 --width=650 --title="$title" --text "Seleccione el disco que desea utilizar para la instalación." --column Seleccione --column="Discos                 " --column Tamaño $devices1 )
+
+
+# Partitioning
+# using gparted
+zenity --question --height=150 --width=650 --ok-label="Deseo particionar" --cancel-label="Ya he particionado" --title="$title" --text "Necesita particionar y/o formatear el disco $dev?\n \nDe ser así seleccione [Deseo particionar] y realice todos los cambios pertinentes.\nEl instalador no realizará ningún cambio ni formateará las particiones después de esto."
+if [ "$?" = "0" ]
+	then
+
+		zenity --timeout 3 --progress --pulsate --auto-close --no-cancel --title="Cargando..." --text="Cargando Gparted... Espere un momento" --width=450
+		gparted $dev
+		
+
+elif [ "$?" = "1" ]
+	then
+		echo "Ya he particionado"
+		
+	fi
+
+	root_part=$(zenity --list --radiolist --ok-label="Siguiente" --cancel-label="Atrás" --height=500 --width=650 --title="$title" --text="Seleccione la partición para ROOT\nAdvertencia! la lista muestra todas las particiones disponibles.\nPor favor elige con cuidado." --column 'Seleccione' --column "Particiones                                    " --column 'Tamaño    ' --column 'Tipo' $(fdisk -l $dev -o Device,Size,Type | grep dev | grep -v Disco | awk '{print $1 " " $2 " " $3 $4 $5 $6 $7}' | awk '{ printf " FALSE ""\0"$0"\0" }'))
+
+	echo ""
+	echo ""
+	echo $root_part
